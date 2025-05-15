@@ -14,7 +14,6 @@ The script expects a plain text configuration file as its first argument, with t
 <API_TOKEN>
 <ZONE_ID>
 <RECORD_NAME>
-<RECORD_ID>
 ```
 ## 🚀 Usage
 

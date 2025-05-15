@@ -15,11 +15,21 @@ fi
 
 CONFIG_FILE=$1
 
+CLOUDFLARE_URL="https://api.cloudflare.com/client/v4/zones/"
+
 # Read configuration values from the config file
 API_TOKEN=$(sed -n '1p' $CONFIG_FILE)
 ZONE_ID=$(sed -n '2p' $CONFIG_FILE)
 RECORD_NAME=$(sed -n '3p' $CONFIG_FILE)
-RECORD_ID=$(sed -n '4p' $CONFIG_FILE)
+
+function fetch_record_id {
+    echo $(curl -sS -X GET "${CLOUDFLARE_URL}${ZONE_ID}/dns_records" \
+    -H "Authorization: Bearer $API_TOKEN" \
+    -H "Content-Type: application/json" \
+    | jq -r '.result[] | select(.comment == "dyndns") | .id')
+}
+
+RECORD_ID=$(fetch_record_id)
 
 # current public ip address
 IP=$(curl -s https://api64.ipify.org)
@@ -27,7 +37,7 @@ IP=$(curl -s https://api64.ipify.org)
 # ip address as configured in dns configuration
 DNS_IP=$(dig +short "$RECORD_NAME")
 
-URL="https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"
+URL="${CLOUDFLARE_URL}${ZONE_ID}/dns_records/$RECORD_ID"
 
 function update_ip {
     echo "Updating DNS record for $RECORD_NAME"
@@ -38,7 +48,8 @@ function update_ip {
       "type": "A",
       "name": "'"$RECORD_NAME"'",
       "content": "'"$IP"'",
-      "ttl": 300,
+      "comment": "dyndns",
+      "ttl": 60,
       "proxied": false
     }')
 }
